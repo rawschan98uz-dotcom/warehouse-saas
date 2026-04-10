@@ -296,12 +296,12 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Транзакции</h1>
           <p className="mt-2 text-muted-foreground">История операций со складом</p>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:flex">
           <Button variant="outline" onClick={() => setShowTransferForm(!showTransferForm)}>
             <ArrowDownUp className="w-4 h-4 mr-1" /> Перевод
           </Button>
@@ -319,7 +319,7 @@ export default function TransactionsPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleTransferSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Откуда *</Label>
                   <Select value={transferData.from} onValueChange={(v) => setTransferData({ ...transferData, from: v || '' })}>
@@ -349,8 +349,8 @@ export default function TransactionsPage() {
               </div>
 
               {transferData.items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-7 space-y-2">
+                <div key={index} className="grid grid-cols-1 gap-2 sm:grid-cols-12 sm:items-end">
+                  <div className="col-span-1 sm:col-span-7 space-y-2">
                     <Label className="text-xs">Товар</Label>
                     <Select value={item.product_id} onValueChange={(v) => updateTransferItem(index, 'product_id', v || '')}>
                       <SelectTrigger>
@@ -363,11 +363,11 @@ export default function TransactionsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="col-span-3 space-y-2">
+                  <div className="col-span-1 sm:col-span-3 space-y-2">
                     <Label className="text-xs">Количество</Label>
                     <Input type="number" step="0.01" min="0" value={item.quantity} onChange={(e) => updateTransferItem(index, 'quantity', parseFloat(e.target.value) || 0)} />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     {transferData.items.length > 1 && <Button type="button" variant="destructive" size="sm" onClick={() => setTransferData({ ...transferData, items: transferData.items.filter((_, i) => i !== index) })}>×</Button>}
                   </div>
                 </div>
@@ -382,7 +382,7 @@ export default function TransactionsPage() {
 
               {transferError && <div className="text-sm text-red-600 bg-red-50 p-3 rounded">{transferError}</div>}
 
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <Button type="submit" disabled={transferLoading}>{transferLoading ? 'Создание...' : 'Перевести'}</Button>
                 <Button type="button" variant="outline" onClick={() => setShowTransferForm(false)}>Отмена</Button>
               </div>
@@ -393,12 +393,12 @@ export default function TransactionsPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex gap-4">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input placeholder="Поиск по товару..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
             </div>
-            <div className="w-48">
+            <div className="w-full lg:col-span-3 lg:w-auto">
               <Select value={filterLocation} onValueChange={(v) => setFilterLocation(v || 'all')}>
                 <SelectTrigger>
                   <span>{filterLocation === 'all' ? 'Все локации' : selectedFilterLocationName || 'Локация'}</span>
@@ -409,7 +409,7 @@ export default function TransactionsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-48">
+            <div className="w-full lg:col-span-3 lg:w-auto">
               <Select value={filterType} onValueChange={(v) => setFilterType(v || 'all')}>
                 <SelectTrigger>
                   <span>{FILTER_TYPE_LABEL[(filterType as 'all' | 'arrival' | 'sale' | 'transfer' | 'expense') || 'all']}</span>
@@ -436,7 +436,7 @@ export default function TransactionsPage() {
             <div className="space-y-2">
               {transactions.map((tx) => (
                 <div key={tx.id} className="border rounded-lg overflow-hidden">
-                  <div onClick={() => toggleTx(tx.id)} className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <div onClick={() => toggleTx(tx.id)} className="flex flex-col gap-3 p-4 cursor-pointer hover:bg-muted/50 transition-colors sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                       <Badge className={getTransactionTypeBadgeColor(tx.type)}>{getTransactionTypeLabel(tx.type)}</Badge>
                       <p className="text-sm text-muted-foreground">
@@ -455,7 +455,7 @@ export default function TransactionsPage() {
                   </div>
                   {expandedTx === tx.id && (
                     <div className="bg-muted/30 p-4 border-t space-y-3">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                         <div><p className="text-muted-foreground">Тип:</p><p className="font-medium">{getTransactionTypeLabel(tx.type)}</p></div>
                         <div><p className="text-muted-foreground">Дата:</p><p className="font-medium">{new Date(tx.created_at).toLocaleString('ru-RU')}</p></div>
                         {tx.locations_from && <div><p className="text-muted-foreground">Откуда:</p><p className="font-medium">{tx.locations_from.name}</p></div>}
@@ -468,9 +468,9 @@ export default function TransactionsPage() {
                           <p className="text-sm font-medium mb-2">Товары:</p>
                           <div className="space-y-2">
                             {(tx.transaction_items || []).map((item, index) => (
-                              <div key={index} className="flex justify-between items-center bg-card p-3 rounded border">
+                              <div key={index} className="flex flex-col gap-2 rounded border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div><p className="font-medium">{item.products.name}</p><p className="text-sm text-muted-foreground">Артикул: {item.products.sku}</p></div>
-                                <div className="text-right">
+                                <div className="text-left sm:text-right">
                                   <p className="font-medium">{item.quantity} шт × {item.price} {item.currency}</p>
                                   <p className="text-sm text-muted-foreground">Итого: {(item.quantity * item.price).toFixed(2)} {item.currency}</p>
                                 </div>

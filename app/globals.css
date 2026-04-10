@@ -49,72 +49,72 @@
 }
 
 :root {
-  --background: #eef4fb;
-  --foreground: #1f3252;
+  --background: #d3e0ef;
+  --foreground: #011931;
   --card: #ffffff;
-  --card-foreground: #1f3252;
+  --card-foreground: #011931;
   --popover: #ffffff;
-  --popover-foreground: #1f3252;
-  --primary: #1f6feb;
+  --popover-foreground: #011931;
+  --primary: #0055ff;
   --primary-foreground: #ffffff;
-  --secondary: #e6eef9;
-  --secondary-foreground: #20365b;
-  --muted: #edf3fb;
-  --muted-foreground: #6681a7;
-  --accent: #2f80ed;
+  --secondary: #dbe5f2;
+  --secondary-foreground: #011931;
+  --muted: #e1e8f1;
+  --muted-foreground: #a7a9ac;
+  --accent: #0055ff;
   --accent-foreground: #ffffff;
-  --destructive: #e35b5b;
-  --border: #d6e2f1;
-  --input: #d3deed;
-  --ring: #2f80ed;
-  --chart-1: #1f6feb;
-  --chart-2: #2f80ed;
-  --chart-3: #4f9dff;
-  --chart-4: #7ab4ff;
-  --chart-5: #3c5ea8;
+  --destructive: #000000;
+  --border: #d1d3d4;
+  --input: #d1d3d4;
+  --ring: #0055ff;
+  --chart-1: #0055ff;
+  --chart-2: #011931;
+  --chart-3: #a7a9ac;
+  --chart-4: #000000;
+  --chart-5: #d1d3d4;
   --radius: 0.75rem;
-  --sidebar: #152d52;
+  --sidebar: #011931;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #2f80ed;
+  --sidebar-primary: #0055ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1f3b67;
+  --sidebar-accent: #163454;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #2b4570;
-  --sidebar-ring: #2f80ed;
+  --sidebar-border: #2b4b6d;
+  --sidebar-ring: #0055ff;
 }
 
 .dark {
-  --background: #0d1625;
-  --foreground: #ecf2ff;
-  --card: #14233b;
-  --card-foreground: #ecf2ff;
-  --popover: #162641;
-  --popover-foreground: #ecf2ff;
-  --primary: #2f80ed;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #011931;
+  --card-foreground: #ffffff;
+  --popover: #011931;
+  --popover-foreground: #ffffff;
+  --primary: #0055ff;
   --primary-foreground: #ffffff;
-  --secondary: #1b2f4f;
-  --secondary-foreground: #e6eeff;
-  --muted: #1b2c48;
-  --muted-foreground: #93a9cd;
-  --accent: #3d8ef7;
+  --secondary: #12304d;
+  --secondary-foreground: #ffffff;
+  --muted: #112a42;
+  --muted-foreground: #a7a9ac;
+  --accent: #0055ff;
   --accent-foreground: #ffffff;
-  --destructive: #ef6b6b;
-  --border: #274268;
-  --input: #1c3150;
-  --ring: #3d8ef7;
-  --chart-1: #2f80ed;
-  --chart-2: #57a1ff;
-  --chart-3: #88beff;
-  --chart-4: #4c6fb8;
-  --chart-5: #79a8e8;
-  --sidebar: #0f2038;
+  --destructive: #d1d3d4;
+  --border: #2b4b6d;
+  --input: #183552;
+  --ring: #0055ff;
+  --chart-1: #0055ff;
+  --chart-2: #d3e0ef;
+  --chart-3: #a7a9ac;
+  --chart-4: #d1d3d4;
+  --chart-5: #ffffff;
+  --sidebar: #011931;
   --sidebar-foreground: #ffffff;
-  --sidebar-primary: #2f80ed;
+  --sidebar-primary: #0055ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1c3456;
+  --sidebar-accent: #143250;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #274066;
-  --sidebar-ring: #3d8ef7;
+  --sidebar-border: #2b4b6d;
+  --sidebar-ring: #0055ff;
 }
 
 @layer base {
@@ -123,8 +123,8 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image: radial-gradient(circle at 8% 2%, rgba(47, 128, 237, 0.12), transparent 42%),
-      radial-gradient(circle at 92% 10%, rgba(87, 161, 255, 0.1), transparent 36%);
+    background-image: radial-gradient(circle at 8% 2%, rgba(0, 85, 255, 0.14), transparent 42%),
+      radial-gradient(circle at 92% 10%, rgba(1, 25, 49, 0.12), transparent 36%);
   }
   html {
     @apply font-sans;
@@ -134,24 +134,24 @@
 @layer components {
   [data-slot='card'] {
     border: 1px solid var(--border);
-    box-shadow: 0 10px 26px rgba(29, 64, 117, 0.1);
+    box-shadow: 0 10px 26px rgba(1, 25, 49, 0.12);
   }
 
   [data-slot='select-content'],
   [data-slot='dropdown-menu-content'] {
     border: 1px solid var(--border);
-    box-shadow: 0 16px 36px rgba(22, 44, 84, 0.18);
+    box-shadow: 0 16px 36px rgba(1, 25, 49, 0.2);
   }
 
   [data-slot='input'],
   [data-slot='textarea'],
   [data-slot='select-trigger'] {
     background-color: #ffffff;
-    border-color: #cddcf0;
+    border-color: #d1d3d4;
   }
 
   [data-slot='button'][data-variant='default'] {
-    box-shadow: 0 8px 18px rgba(31, 111, 235, 0.32);
+    box-shadow: 0 8px 18px rgba(0, 85, 255, 0.35);
   }
 
   @media (max-width: 768px) {

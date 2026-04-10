@@ -120,6 +120,12 @@ interface SearchSuggestion {
   unit: string
 }
 
+function parseEditableNumber(raw: string) {
+  if (raw === '') return 0
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 function firstRelation<T>(value: T | T[] | null): T | null {
   if (!value) return null
   if (Array.isArray(value)) return value[0] || null
@@ -149,9 +155,13 @@ export default function SalesPage() {
   const [saleItems, setSaleItems] = useState<SaleItemForm[]>([
     { product_id: '', quantity: 1, price: 0, currency: 'UZS' },
   ])
+  const [saleItemDrafts, setSaleItemDrafts] = useState<Array<{ quantity: string; price: string }>>([
+    { quantity: '1', price: '0' },
+  ])
   const [paymentItems, setPaymentItems] = useState<PaymentFormItem[]>([
     { payment_method_id: '', amount: 0 },
   ])
+  const [paymentDrafts, setPaymentDrafts] = useState<Array<{ amount: string }>>([{ amount: '0' }])
   const [saleNotes, setSaleNotes] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [saleLoading, setSaleLoading] = useState(false)
@@ -191,7 +201,9 @@ export default function SalesPage() {
     setProducts([])
     setSearchQuery('')
     setSaleItems([{ product_id: '', quantity: 1, price: 0, currency: 'UZS' }])
+    setSaleItemDrafts([{ quantity: '1', price: '0' }])
     setPaymentItems([{ payment_method_id: paymentMethods[0]?.id || '', amount: 0 }])
+    setPaymentDrafts([{ amount: '0' }])
     setSaleNotes('')
     setDueDate('')
     setSaleError('')
@@ -373,7 +385,9 @@ export default function SalesPage() {
       const nextValue = value || ''
       setSelectedLocation(nextValue)
       setSaleItems([{ product_id: '', quantity: 1, price: 0, currency: 'UZS' }])
+      setSaleItemDrafts([{ quantity: '1', price: '0' }])
       setPaymentItems([{ payment_method_id: paymentMethods[0]?.id || '', amount: 0 }])
+      setPaymentDrafts([{ amount: '0' }])
       setSearchQuery('')
       setShowSearchSuggestions(false)
       if (nextValue && activeOrgId) {
@@ -387,6 +401,19 @@ export default function SalesPage() {
 
   const addSaleItem = useCallback(() => {
     setSaleItems((prev) => [...prev, { product_id: '', quantity: 1, price: 0, currency: 'UZS' }])
+    setSaleItemDrafts((prev) => [...prev, { quantity: '1', price: '0' }])
+  }, [])
+
+  const updateSaleDraft = useCallback((index: number, field: 'quantity' | 'price', value: string) => {
+    setSaleItemDrafts((prev) => {
+      const next = [...prev]
+      const current = next[index] || { quantity: '1', price: '0' }
+      next[index] = {
+        ...current,
+        [field]: value,
+      }
+      return next
+    })
   }, [])
 
   const updateSaleItem = useCallback(
@@ -401,6 +428,15 @@ export default function SalesPage() {
           if (product) {
             current.price = product.sale_price
             current.currency = product.currency
+            setSaleItemDrafts((drafts) => {
+              const next = [...drafts]
+              const existing = next[index] || { quantity: String(current.quantity), price: '0' }
+              next[index] = {
+                ...existing,
+                price: String(product.sale_price),
+              }
+              return next
+            })
           }
         }
 
@@ -420,6 +456,7 @@ export default function SalesPage() {
 
   const removeSaleItem = useCallback((index: number) => {
     setSaleItems((prev) => prev.filter((_, i) => i !== index))
+    setSaleItemDrafts((prev) => prev.filter((_, i) => i !== index))
   }, [])
 
   const addPaymentItem = useCallback(() => {
@@ -430,7 +467,16 @@ export default function SalesPage() {
         amount: 0,
       },
     ])
+    setPaymentDrafts((prev) => [...prev, { amount: '0' }])
   }, [paymentMethods])
+
+  const updatePaymentDraft = useCallback((index: number, value: string) => {
+    setPaymentDrafts((prev) => {
+      const next = [...prev]
+      next[index] = { amount: value }
+      return next
+    })
+  }, [])
 
   const updatePaymentItem = useCallback((index: number, field: keyof PaymentFormItem, value: string | number) => {
     setPaymentItems((prev) => {
@@ -451,6 +497,7 @@ export default function SalesPage() {
 
   const removePaymentItem = useCallback((index: number) => {
     setPaymentItems((prev) => prev.filter((_, i) => i !== index))
+    setPaymentDrafts((prev) => prev.filter((_, i) => i !== index))
   }, [])
 
   const handleSaleSubmit = useCallback(
@@ -624,12 +671,13 @@ export default function SalesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Продажи</h1>
           <p className="mt-2 text-muted-foreground">История продаж и новая продажа</p>
         </div>
         <Button
+          className="w-full sm:w-auto"
           onClick={() => {
             if (showSaleForm) {
               setShowSaleForm(false)
@@ -805,7 +853,7 @@ export default function SalesPage() {
                     </div>
 
                     {saleItems.map((item, index) => (
-                      <div key={`${item.product_id}-${index}`} className="grid grid-cols-12 gap-2 items-end">
+                      <div key={`${item.product_id}-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-12 md:items-end">
                         <div className="col-span-12 md:col-span-5 space-y-2">
                           <Label className="text-xs">Товар</Label>
                           <Select
@@ -840,35 +888,47 @@ export default function SalesPage() {
                           </Select>
                         </div>
 
-                        <div className="col-span-4 md:col-span-2 space-y-2">
+                        <div className="col-span-1 md:col-span-2 space-y-2">
                           <Label className="text-xs">Кол-во</Label>
                           <Input
                             type="number"
                             step="0.01"
                             min="0.01"
-                            value={item.quantity}
-                            onChange={(event) =>
-                              updateSaleItem(index, 'quantity', Number(event.target.value || 0))
-                            }
+                            value={saleItemDrafts[index]?.quantity ?? String(item.quantity)}
+                            onFocus={() => {
+                              if ((saleItemDrafts[index]?.quantity ?? String(item.quantity)) === '0') {
+                                updateSaleDraft(index, 'quantity', '')
+                              }
+                            }}
+                            onChange={(event) => {
+                              updateSaleDraft(index, 'quantity', event.target.value)
+                              updateSaleItem(index, 'quantity', parseEditableNumber(event.target.value))
+                            }}
                             required
                           />
                         </div>
 
-                        <div className="col-span-4 md:col-span-2 space-y-2">
+                        <div className="col-span-1 md:col-span-2 space-y-2">
                           <Label className="text-xs">Цена</Label>
                           <Input
                             type="number"
                             step="0.01"
                             min="0"
-                            value={item.price}
-                            onChange={(event) =>
-                              updateSaleItem(index, 'price', Number(event.target.value || 0))
-                            }
+                            value={saleItemDrafts[index]?.price ?? String(item.price)}
+                            onFocus={() => {
+                              if ((saleItemDrafts[index]?.price ?? String(item.price)) === '0') {
+                                updateSaleDraft(index, 'price', '')
+                              }
+                            }}
+                            onChange={(event) => {
+                              updateSaleDraft(index, 'price', event.target.value)
+                              updateSaleItem(index, 'price', parseEditableNumber(event.target.value))
+                            }}
                             required
                           />
                         </div>
 
-                        <div className="col-span-3 md:col-span-2 space-y-2">
+                        <div className="col-span-1 md:col-span-2 space-y-2">
                           <Label className="text-xs">Сумма</Label>
                           <Input type="text" value={`${(item.quantity * item.price).toFixed(2)}`} disabled />
                         </div>
@@ -899,8 +959,8 @@ export default function SalesPage() {
                     </div>
 
                     {paymentItems.map((payment, index) => (
-                      <div key={`${payment.payment_method_id}-${index}`} className="grid grid-cols-12 gap-2 items-end">
-                        <div className="col-span-8 md:col-span-8 space-y-2">
+                      <div key={`${payment.payment_method_id}-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-12 md:items-end">
+                        <div className="col-span-1 md:col-span-8 space-y-2">
                           <Label className="text-xs">Тип оплаты</Label>
                           <Select
                             value={payment.payment_method_id}
@@ -925,16 +985,22 @@ export default function SalesPage() {
                           </Select>
                         </div>
 
-                        <div className="col-span-3 md:col-span-3 space-y-2">
+                        <div className="col-span-1 md:col-span-3 space-y-2">
                           <Label className="text-xs">Сумма</Label>
                           <Input
                             type="number"
                             step="0.01"
                             min="0"
-                            value={payment.amount}
-                            onChange={(event) =>
-                              updatePaymentItem(index, 'amount', Number(event.target.value || 0))
-                            }
+                            value={paymentDrafts[index]?.amount ?? String(payment.amount)}
+                            onFocus={() => {
+                              if ((paymentDrafts[index]?.amount ?? String(payment.amount)) === '0') {
+                                updatePaymentDraft(index, '')
+                              }
+                            }}
+                            onChange={(event) => {
+                              updatePaymentDraft(index, event.target.value)
+                              updatePaymentItem(index, 'amount', parseEditableNumber(event.target.value))
+                            }}
                           />
                         </div>
 
@@ -989,7 +1055,7 @@ export default function SalesPage() {
 
                   {saleError && <div className="text-sm text-red-600 bg-red-50 p-3 rounded">{saleError}</div>}
 
-                  <div className="flex gap-4">
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     <Button type="submit" disabled={saleLoading}>
                       {saleLoading ? 'Создание...' : 'Продать'}
                     </Button>
@@ -1062,7 +1128,7 @@ export default function SalesPage() {
                   <div key={sale.id} className="border rounded-lg overflow-hidden">
                     <div
                       onClick={() => toggleSale(sale.id)}
-                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                      className="flex flex-col gap-3 p-4 cursor-pointer hover:bg-muted/50 transition-colors sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="flex items-center gap-3">
                         <Badge className={getTransactionTypeBadgeColor(sale.type)}>
@@ -1093,7 +1159,7 @@ export default function SalesPage() {
 
                     {expandedSale === sale.id && (
                       <div className="bg-muted/30 p-4 border-t space-y-3">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                           <div>
                             <p className="text-muted-foreground">Дата:</p>
                             <p className="font-medium">{new Date(sale.created_at).toLocaleString('ru-RU')}</p>
@@ -1130,7 +1196,7 @@ export default function SalesPage() {
                               {(sale.sale_payments || []).map((payment, index) => {
                                 const method = firstRelation(payment.payment_methods)
                                 return (
-                                  <div key={`${sale.id}-payment-${index}`} className="flex justify-between items-center bg-card p-2 rounded border">
+                                  <div key={`${sale.id}-payment-${index}`} className="flex flex-col gap-1 rounded border bg-card p-2 sm:flex-row sm:items-center sm:justify-between">
                                     <p className="text-sm font-medium">{method?.name || 'Тип оплаты'}</p>
                                     <p className="text-sm font-medium">
                                       {Number(payment.amount || 0).toFixed(2)} {sale.currency}
@@ -1149,7 +1215,7 @@ export default function SalesPage() {
                               {(sale.transaction_items || []).map((item, index) => {
                                 const product = firstRelation(item.products)
                                 return (
-                                  <div key={`${sale.id}-item-${index}`} className="flex justify-between items-center bg-card p-3 rounded border">
+                                  <div key={`${sale.id}-item-${index}`} className="flex flex-col gap-2 rounded border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                       <p className="font-medium">{product?.name || 'Товар'}</p>
                                       <p className="text-sm text-muted-foreground">Артикул: {product?.sku || '-'}</p>

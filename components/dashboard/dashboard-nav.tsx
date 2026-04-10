@@ -55,8 +55,8 @@ export function DashboardNav() {
     <nav
       className="border-b"
       style={{
-        borderColor: '#274066',
-        background: 'linear-gradient(100deg, #132847 0%, #1B3C67 45%, #20497C 100%)',
+        borderColor: '#2b4b6d',
+        background: 'linear-gradient(100deg, #011931 0%, #0b2945 45%, #143250 100%)',
       }}
     >
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
@@ -76,7 +76,7 @@ export function DashboardNav() {
                     href={item.href}
                     className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                       isActive
-                        ? 'bg-[#5CA8FF]/25 text-white'
+                        ? 'bg-[#0055FF]/35 text-white'
                         : 'text-white/75 hover:bg-white/10 hover:text-white'
                     }`}
                   >
@@ -131,7 +131,7 @@ export function DashboardNav() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-[#5CA8FF]/25 text-white'
+                      ? 'bg-[#0055FF]/35 text-white'
                       : 'text-white/80 hover:bg-white/10 hover:text-white'
                   }`}
                 >
