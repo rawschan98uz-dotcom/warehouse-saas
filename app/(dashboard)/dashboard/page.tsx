@@ -68,6 +68,7 @@ export default function DashboardPage() {
     currency: 'UZS',
   })
   const [loading, setLoading] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const fetchStats = useCallback(async () => {
     try {
@@ -139,6 +140,7 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
     } finally {
+      setLastUpdated(new Date())
       setLoading(false)
     }
   }, [supabase])
@@ -169,112 +171,152 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Дашборд</h1>
-        <p className="mt-2 text-muted-foreground">Сводка по складу, продажам и клиентам</p>
+      <div className="bg-gradient-to-r from-[#0055FF] to-[#011931] rounded-2xl p-6 text-white shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Дашборд управления складом</h1>
+            <p className="mt-2 opacity-90">Сводка по складу, продажам и клиентам</p>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 text-center">
+              <p className="text-sm opacity-80">Последнее обновление</p>
+              <p className="font-medium">
+                {lastUpdated ? lastUpdated.toLocaleTimeString('ru-RU') : '...'}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-4 flex justify-end">
+          <button 
+            onClick={fetchStats}
+            disabled={loading}
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg 
+              className={`w-4 h-4 transition-transform ${loading ? 'animate-spin' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Обновить данные
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Link href="/dashboard/products">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow h-full">
-            <CardHeader>
-              <CardDescription>Всего товаров</CardDescription>
-              <CardTitle className="text-3xl">{stats.totalProducts}</CardTitle>
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 h-full border-0 shadow-sm hover:scale-[1.02] bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Всего товаров</CardDescription>
+              <CardTitle className="text-3xl text-[#011931] dark:text-white">
+                {stats.totalProducts}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">В каталоге</p>
+              <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">В каталоге</p>
             </CardContent>
           </Card>
         </Link>
 
         <Link href="/dashboard/products">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow h-full">
-            <CardHeader>
-              <CardDescription>Остаток (себестоимость)</CardDescription>
-              <CardTitle className="text-3xl">
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 h-full border-0 shadow-sm hover:scale-[1.02] bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Остаток (себестоимость)</CardDescription>
+              <CardTitle className="text-3xl text-[#011931] dark:text-white">
                 {stats.totalInventoryValue.toFixed(0)} {stats.currency}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Текущая стоимость запасов</p>
+              <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Текущая стоимость запасов</p>
             </CardContent>
           </Card>
         </Link>
 
         <Link href="/dashboard/locations">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow h-full">
-            <CardHeader>
-              <CardDescription>Локации</CardDescription>
-              <CardTitle className="text-3xl">{stats.totalLocations}</CardTitle>
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 h-full border-0 shadow-sm hover:scale-[1.02] bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Локации</CardDescription>
+              <CardTitle className="text-3xl text-[#011931] dark:text-white">
+                {stats.totalLocations}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Склады и магазины</p>
+              <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Склады и магазины</p>
             </CardContent>
           </Card>
         </Link>
 
         <Link href="/dashboard/transactions">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow h-full">
-            <CardHeader>
-              <CardDescription>Транзакции</CardDescription>
-              <CardTitle className="text-3xl">{stats.totalTransactions}</CardTitle>
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 h-full border-0 shadow-sm hover:scale-[1.02] bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Транзакции</CardDescription>
+              <CardTitle className="text-3xl text-[#011931] dark:text-white">
+                {stats.totalTransactions}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Все операции</p>
+              <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Все операции</p>
             </CardContent>
           </Card>
         </Link>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardDescription>Продажи сегодня</CardDescription>
-            <CardTitle className="text-3xl">{stats.todaySales}</CardTitle>
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Продажи сегодня</CardDescription>
+            <CardTitle className="text-3xl text-[#011931] dark:text-white">
+              {stats.todaySales}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Кол-во чеков</p>
+            <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Кол-во чеков</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardDescription>Выручка сегодня</CardDescription>
-            <CardTitle className="text-3xl">
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Выручка сегодня</CardDescription>
+            <CardTitle className="text-3xl text-[#011931] dark:text-white">
               {stats.todayRevenue.toFixed(0)} {stats.currency}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Сумма продаж</p>
+            <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Сумма продаж</p>
           </CardContent>
         </Card>
 
         <Link href="/dashboard/debts">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow h-full">
-            <CardHeader>
-              <CardDescription>Открытые долги</CardDescription>
-              <CardTitle className="text-3xl">{stats.openDebtsCount}</CardTitle>
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 h-full border-0 shadow-sm hover:scale-[1.02] bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Открытые долги</CardDescription>
+              <CardTitle className="text-3xl text-[#011931] dark:text-white">
+                {stats.openDebtsCount}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">
                 На сумму {stats.openDebtsAmount.toFixed(0)} {stats.currency}
               </p>
             </CardContent>
           </Card>
         </Link>
 
-        <Card className={stats.lowStockCount > 0 ? 'border-[#F2994A]' : ''}>
-          <CardHeader>
-            <CardDescription>Низкий остаток</CardDescription>
+        <Card className={`border-0 shadow-sm bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d] ${stats.lowStockCount > 0 ? 'ring-2 ring-[#F2994A]/50' : ''}`}>
+          <CardHeader className="pb-2">
+            <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Низкий остаток</CardDescription>
             <CardTitle
               className="text-3xl"
-              style={{ color: stats.lowStockCount > 0 ? '#F2994A' : undefined }}
+              style={{ color: stats.lowStockCount > 0 ? '#F2994A' : '#011931' }}
             >
               {stats.lowStockCount}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Товаров ниже минимума</p>
+            <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Товаров ниже минимума</p>
           </CardContent>
         </Card>
       </div>

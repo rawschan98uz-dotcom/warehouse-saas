@@ -74,6 +74,16 @@ interface TransferForm {
   notes: string
 }
 
+interface TransferItemDraft {
+  quantity: string
+}
+
+function parseEditableNumber(raw: string) {
+  if (raw === '') return 0
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 interface TransferProduct {
   id: string
   name: string
@@ -109,6 +119,9 @@ export default function ProductsPage() {
     items: [{ product_id: '', quantity: 0 }],
     notes: '',
   })
+  const [transferItemDrafts, setTransferItemDrafts] = useState<TransferItemDraft[]>([
+    { quantity: '0' },
+  ])
   const [allProducts, setAllProducts] = useState<TransferProduct[]>([])
 
   const selectedLocationLabel =
@@ -292,6 +305,7 @@ export default function ProductsPage() {
       ...prev,
       items: [...prev.items, { product_id: '', quantity: 0 }],
     }))
+    setTransferItemDrafts((prev) => [...prev, { quantity: '0' }])
   }
 
   const updateTransferItem = (index: number, field: keyof TransferItem, value: string | number) => {
@@ -312,6 +326,14 @@ export default function ProductsPage() {
         ...prev,
         items: nextItems,
       }
+    })
+  }
+
+  const updateTransferItemDraft = (index: number, value: string) => {
+    setTransferItemDrafts((prev) => {
+      const next = [...prev]
+      next[index] = { quantity: value }
+      return next
     })
   }
 
@@ -426,6 +448,7 @@ export default function ProductsPage() {
 
       setShowTransfer(false)
       setTransferData({ from: '', to: '', items: [{ product_id: '', quantity: 0 }], notes: '' })
+      setTransferItemDrafts([{ quantity: '0' }])
       await fetchProducts(orgId)
     } catch (err: any) {
       setTransferError(err.message || 'Ошибка')
@@ -544,8 +567,16 @@ export default function ProductsPage() {
                       type="number"
                       step="0.01"
                       min="0"
-                      value={item.quantity}
-                      onChange={(e) => updateTransferItem(index, 'quantity', parseFloat(e.target.value) || 0)}
+                      value={transferItemDrafts[index]?.quantity ?? String(item.quantity)}
+                      onFocus={() => {
+                        if ((transferItemDrafts[index]?.quantity ?? String(item.quantity)) === '0') {
+                          updateTransferItemDraft(index, '')
+                        }
+                      }}
+                      onChange={(e) => {
+                        updateTransferItemDraft(index, e.target.value)
+                        updateTransferItem(index, 'quantity', parseEditableNumber(e.target.value))
+                      }}
                     />
                   </div>
                   <div className="col-span-2">
@@ -554,12 +585,13 @@ export default function ProductsPage() {
                         type="button"
                         variant="destructive"
                         size="sm"
-                        onClick={() =>
+                        onClick={() => {
                           setTransferData((prev) => ({
                             ...prev,
                             items: prev.items.filter((_, itemIndex) => itemIndex !== index),
                           }))
-                        }
+                          setTransferItemDrafts((prev) => prev.filter((_, itemIndex) => itemIndex !== index))
+                        }}
                       >
                         ×
                       </Button>

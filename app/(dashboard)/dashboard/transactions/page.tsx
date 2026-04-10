@@ -41,6 +41,16 @@ interface ProductOption {
   sku: string
 }
 
+interface TransferItemDraft {
+  quantity: string
+}
+
+function parseEditableNumber(raw: string) {
+  if (raw === '') return 0
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 const FILTER_TYPE_LABEL: Record<'all' | 'arrival' | 'sale' | 'transfer' | 'expense', string> = {
   all: 'Все типы',
   arrival: 'Приход',
@@ -66,6 +76,9 @@ export default function TransactionsPage() {
   const [transferLoading, setTransferLoading] = useState(false)
   const [transferError, setTransferError] = useState('')
   const [transferData, setTransferData] = useState({ from: '', to: '', items: [{ product_id: '', quantity: 0 }], notes: '' })
+  const [transferItemDrafts, setTransferItemDrafts] = useState<TransferItemDraft[]>([
+    { quantity: '0' },
+  ])
   const [products, setProducts] = useState<ProductOption[]>([])
 
   const selectedFilterLocationName =
@@ -173,12 +186,21 @@ export default function TransactionsPage() {
 
   const addTransferItem = () => {
     setTransferData({ ...transferData, items: [...transferData.items, { product_id: '', quantity: 0 }] })
+    setTransferItemDrafts((prev) => [...prev, { quantity: '0' }])
   }
 
   const updateTransferItem = (index: number, field: string, value: any) => {
     const newItems = [...transferData.items]
     newItems[index] = { ...newItems[index], [field]: value }
     setTransferData({ ...transferData, items: newItems })
+  }
+
+  const updateTransferItemDraft = (index: number, value: string) => {
+    setTransferItemDrafts((prev) => {
+      const next = [...prev]
+      next[index] = { quantity: value }
+      return next
+    })
   }
 
   const handleTransferSubmit = async (e: React.FormEvent) => {
@@ -269,6 +291,7 @@ export default function TransactionsPage() {
 
       setShowTransferForm(false)
       setTransferData({ from: '', to: '', items: [{ product_id: '', quantity: 0 }], notes: '' })
+      setTransferItemDrafts([{ quantity: '0' }])
       await Promise.all([fetchTransactions(orgId), fetchTransferProducts(orgId)])
     } catch (err: any) {
       setTransferError(err.message || 'Ошибка')
@@ -365,10 +388,36 @@ export default function TransactionsPage() {
                   </div>
                   <div className="col-span-1 sm:col-span-3 space-y-2">
                     <Label className="text-xs">Количество</Label>
-                    <Input type="number" step="0.01" min="0" value={item.quantity} onChange={(e) => updateTransferItem(index, 'quantity', parseFloat(e.target.value) || 0)} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={transferItemDrafts[index]?.quantity ?? String(item.quantity)}
+                      onFocus={() => {
+                        if ((transferItemDrafts[index]?.quantity ?? String(item.quantity)) === '0') {
+                          updateTransferItemDraft(index, '')
+                        }
+                      }}
+                      onChange={(e) => {
+                        updateTransferItemDraft(index, e.target.value)
+                        updateTransferItem(index, 'quantity', parseEditableNumber(e.target.value))
+                      }}
+                    />
                   </div>
                   <div className="col-span-1 sm:col-span-2">
-                    {transferData.items.length > 1 && <Button type="button" variant="destructive" size="sm" onClick={() => setTransferData({ ...transferData, items: transferData.items.filter((_, i) => i !== index) })}>×</Button>}
+                    {transferData.items.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          setTransferData({ ...transferData, items: transferData.items.filter((_, i) => i !== index) })
+                          setTransferItemDrafts((prev) => prev.filter((_, i) => i !== index))
+                        }}
+                      >
+                        ×
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}

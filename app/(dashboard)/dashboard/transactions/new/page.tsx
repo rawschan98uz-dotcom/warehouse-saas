@@ -36,6 +36,17 @@ interface TransactionItem {
   product_name?: string
 }
 
+interface ItemDraft {
+  quantity: string
+  price: string
+}
+
+function parseEditableNumber(raw: string) {
+  if (raw === '') return 0
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 const TRANSACTION_TYPE_LABEL: Record<'arrival' | 'transfer' | 'expense', string> = {
   arrival: 'Приход товара',
   transfer: 'Перевод между локациями',
@@ -59,6 +70,9 @@ export default function NewTransactionPage() {
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<TransactionItem[]>([
     { product_id: '', quantity: 0, price: 0, currency: 'UZS' }
+  ])
+  const [itemDrafts, setItemDrafts] = useState<ItemDraft[]>([
+    { quantity: '0', price: '0' },
   ])
 
   useEffect(() => {
@@ -141,10 +155,24 @@ export default function NewTransactionPage() {
 
   const addItem = () => {
     setItems([...items, { product_id: '', quantity: 0, price: 0, currency: 'UZS' }])
+    setItemDrafts((prev) => [...prev, { quantity: '0', price: '0' }])
   }
 
   const removeItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index))
+    setItemDrafts((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const updateDraft = (index: number, field: 'quantity' | 'price', value: string) => {
+    setItemDrafts((prev) => {
+      const next = [...prev]
+      const current = next[index] || { quantity: '0', price: '0' }
+      next[index] = {
+        ...current,
+        [field]: value,
+      }
+      return next
+    })
   }
 
   const updateItem = (index: number, field: keyof TransactionItem, value: any) => {
@@ -156,6 +184,15 @@ export default function NewTransactionPage() {
         newItems[index].price = product.purchase_price
         newItems[index].currency = product.currency
         newItems[index].product_name = product.name
+        setItemDrafts((prev) => {
+          const next = [...prev]
+          const current = next[index] || { quantity: String(newItems[index].quantity), price: '0' }
+          next[index] = {
+            ...current,
+            price: String(product.purchase_price),
+          }
+          return next
+        })
       }
     }
     setItems(newItems)
@@ -362,11 +399,41 @@ export default function NewTransactionPage() {
                   </div>
                   <div className="col-span-2 space-y-2">
                     <Label className="text-xs">Количество</Label>
-                    <Input type="number" step="0.01" min="0" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value))} required />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={itemDrafts[index]?.quantity ?? String(item.quantity)}
+                      onFocus={() => {
+                        if ((itemDrafts[index]?.quantity ?? String(item.quantity)) === '0') {
+                          updateDraft(index, 'quantity', '')
+                        }
+                      }}
+                      onChange={(e) => {
+                        updateDraft(index, 'quantity', e.target.value)
+                        updateItem(index, 'quantity', parseEditableNumber(e.target.value))
+                      }}
+                      required
+                    />
                   </div>
                   <div className="col-span-2 space-y-2">
                     <Label className="text-xs">Цена</Label>
-                    <Input type="number" step="0.01" min="0" value={item.price} onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value))} required />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={itemDrafts[index]?.price ?? String(item.price)}
+                      onFocus={() => {
+                        if ((itemDrafts[index]?.price ?? String(item.price)) === '0') {
+                          updateDraft(index, 'price', '')
+                        }
+                      }}
+                      onChange={(e) => {
+                        updateDraft(index, 'price', e.target.value)
+                        updateItem(index, 'price', parseEditableNumber(e.target.value))
+                      }}
+                      required
+                    />
                   </div>
                   <div className="col-span-2 space-y-2">
                     <Label className="text-xs">Сумма</Label>

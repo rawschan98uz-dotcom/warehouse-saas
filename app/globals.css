@@ -135,12 +135,14 @@
   [data-slot='card'] {
     border: 1px solid var(--border);
     box-shadow: 0 10px 26px rgba(1, 25, 49, 0.12);
+    transition: all 0.3s ease;
   }
 
   [data-slot='select-content'],
   [data-slot='dropdown-menu-content'] {
     border: 1px solid var(--border);
     box-shadow: 0 16px 36px rgba(1, 25, 49, 0.2);
+    background-color: #ffffff;
   }
 
   [data-slot='input'],
@@ -177,4 +179,62 @@
       min-height: 34px;
     }
   }
+}
+
+/* Additional enhancements for dashboard */
+.dashboard-stats-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.stat-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(209, 211, 212, 0.5);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 85, 255, 0.15);
+}
+
+.dark .stat-card {
+  background: linear-gradient(135deg, #011931 0%, #021f3d 100%);
+  border: 1px solid rgba(43, 75, 109, 0.5);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1a2238;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #2d3748;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #4a5568;
 }

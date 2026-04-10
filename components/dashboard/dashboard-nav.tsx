@@ -53,31 +53,31 @@ export function DashboardNav() {
 
   return (
     <nav
-      className="border-b"
+      className="border-b border-white/20 backdrop-blur-md"
       style={{
-        borderColor: '#2b4b6d',
-        background: 'linear-gradient(100deg, #011931 0%, #0b2945 45%, #143250 100%)',
+        background: 'linear-gradient(135deg, #011931 0%, #0b2945 45%, #143250 100%)',
       }}
     >
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/dashboard" className="text-xl font-bold text-white">
+              <Link href="/dashboard" className="text-xl font-bold text-white flex items-center">
+                <span className="bg-[#0055FF] text-white rounded-lg px-2 py-1 mr-2 text-sm">N</span>
                 Nuriddin
               </Link>
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-4">
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-2">
               {navigation.map((item) => {
                 const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
                       isActive
-                        ? 'bg-[#0055FF]/35 text-white'
-                        : 'text-white/75 hover:bg-white/10 hover:text-white'
+                        ? 'bg-white/20 text-white shadow-inner'
+                        : 'text-white/80 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     {item.name}
@@ -93,26 +93,29 @@ export function DashboardNav() {
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               className="sm:hidden text-white hover:bg-white/10"
             >
-              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
             <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="text-white hover:bg-white/10">
-              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger className="relative h-10 w-10 rounded-full border-0 bg-transparent hover:bg-white/10 p-0">
                 <Avatar>
-                  <AvatarFallback className="bg-white/20 text-white">{user?.email ? getInitials(user.email) : 'U'}</AvatarFallback>
+                  <AvatarFallback className="bg-[#0055FF]/20 text-white border border-white/20">{user?.email ? getInitials(user.email) : 'U'}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{user?.email}</p>
+              <DropdownMenuContent align="end" className="bg-[#011931] border-[#2b4b6d] text-white">
+                <div className="px-3 py-2 border-b border-[#2b4b6d]">
+                  <p className="text-sm font-medium truncate max-w-[160px]">{user?.email}</p>
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Link href="/dashboard/settings">Настройки</Link>
+                <DropdownMenuSeparator className="bg-[#2b4b6d]" />
+                <DropdownMenuItem className="hover:bg-[#0055FF]/20">
+                  <Link href="/dashboard/settings" className="w-full">Настройки</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => signOut()}>
+                <DropdownMenuItem 
+                  onClick={() => signOut()}
+                  className="hover:bg-red-500/20 text-red-400"
+                >
                   Выйти
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -121,7 +124,7 @@ export function DashboardNav() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="sm:hidden pb-3 space-y-1">
+          <div className="sm:hidden pb-4 pt-2 space-y-1 border-t border-white/10">
             {navigation.map((item) => {
               const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
               return (
@@ -129,9 +132,9 @@ export function DashboardNav() {
                   key={item.name}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`block rounded-lg mx-2 px-4 py-3 text-base font-medium transition-colors ${
                     isActive
-                      ? 'bg-[#0055FF]/35 text-white'
+                      ? 'bg-white/20 text-white shadow-inner'
                       : 'text-white/80 hover:bg-white/10 hover:text-white'
                   }`}
                 >
