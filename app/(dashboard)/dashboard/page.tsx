@@ -72,79 +72,23 @@ function firstRelation<T>(value: T | T[] | null): T | null {
   return value
 }
 
-// Demo chart data
-const salesChartData = [
-  { name: '5k', value: 30 },
-  { name: '10k', value: 35 },
-  { name: '15k', value: 45 },
-  { name: '20k', value: 80 },
-  { name: '25k', value: 55 },
-  { name: '30k', value: 60 },
-  { name: '35k', value: 48 },
-  { name: '40k', value: 52 },
-  { name: '45k', value: 65 },
-  { name: '50k', value: 55 },
-  { name: '55k', value: 50 },
-  { name: '60k', value: 58 },
-]
+// Interface for chart data
+interface ChartDataPoint {
+  dateStr: string
+  name: string
+  sales: number
+  profit: number
+}
 
-const revenueChartData = [
-  { name: '5k', sales: 30, profit: 20 },
-  { name: '10k', sales: 40, profit: 28 },
-  { name: '15k', sales: 45, profit: 32 },
-  { name: '20k', sales: 55, profit: 40 },
-  { name: '25k', sales: 65, profit: 48 },
-  { name: '30k', sales: 60, profit: 55 },
-  { name: '35k', sales: 70, profit: 50 },
-  { name: '40k', sales: 55, profit: 42 },
-  { name: '45k', sales: 60, profit: 48 },
-  { name: '50k', sales: 65, profit: 52 },
-  { name: '55k', sales: 72, profit: 58 },
-  { name: '60k', sales: 68, profit: 55 },
-]
-
-const recentDeals = [
-  {
-    product: 'Товар #1',
-    location: 'Основной склад',
-    date: '12.04.2026 - 14:30',
-    quantity: 423,
-    amount: '$34,295',
-    status: 'delivered' as const,
-  },
-  {
-    product: 'Товар #2',
-    location: 'Магазин #2',
-    date: '12.04.2026 - 12:15',
-    quantity: 150,
-    amount: '$12,500',
-    status: 'pending' as const,
-  },
-  {
-    product: 'Товар #3',
-    location: 'Склад резервный',
-    date: '11.04.2026 - 18:00',
-    quantity: 89,
-    amount: '$8,420',
-    status: 'delivered' as const,
-  },
-  {
-    product: 'Товар #4',
-    location: 'Магазин #1',
-    date: '11.04.2026 - 09:45',
-    quantity: 35,
-    amount: '$2,100',
-    status: 'rejected' as const,
-  },
-  {
-    product: 'Товар #5',
-    location: 'Основной склад',
-    date: '10.04.2026 - 16:20',
-    quantity: 210,
-    amount: '$18,750',
-    status: 'delivered' as const,
-  },
-]
+interface Deal {
+  id: string
+  product: string
+  location: string
+  date: string
+  quantity: number
+  amount: string
+  status: 'delivered' | 'pending' | 'rejected'
+}
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
@@ -164,6 +108,8 @@ export default function DashboardPage() {
     currency: 'UZS',
   })
   const [loading, setLoading] = useState(true)
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([])
+  const [recentDealsList, setRecentDealsList] = useState<Deal[]>([])
 
   const fetchStats = useCallback(async () => {
     try {
@@ -232,6 +178,121 @@ export default function DashboardPage() {
         openDebtsAmount,
         currency,
       })
+
+      // Fetch real Chart Data
+      const days = 14
+      const chartPoints: ChartDataPoint[] = []
+      const refDate = new Date()
+      // format dates backwards
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(refDate)
+        d.setDate(d.getDate() - i)
+        d.setHours(12, 0, 0, 0) // avoiding timezone shifts
+        const day = d.getDate()
+        const monthStr = d.toLocaleString('ru-RU', { month: 'short' })
+        chartPoints.push({
+          dateStr: d.toISOString().split('T')[0],
+          name: `${day} ${monthStr}`,
+          sales: 0,
+          profit: 0
+        })
+      }
+
+      const fourteenDaysAgo = new Date()
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
+      fourteenDaysAgo.setHours(0, 0, 0, 0)
+      
+      const salesQuery = await supabase
+        .from('transactions')
+        .select(`
+          id, 
+          created_at, 
+          total_amount,
+          transaction_items(
+            quantity, 
+            price, 
+            products(purchase_price)
+          )
+        `)
+        .eq('type', 'sale')
+        .gte('created_at', fourteenDaysAgo.toISOString())
+
+      if (salesQuery.data) {
+        for (const tx of salesQuery.data) {
+          const dateStr = tx.created_at.split('T')[0]
+          const point = chartPoints.find(p => p.dateStr === dateStr)
+          if (point) {
+            const amount = Number(tx.total_amount || 0)
+            point.sales += amount
+            
+            let cost = 0
+            const items = tx.transaction_items || []
+            for (const item of items) {
+              const product = firstRelation(item.products)
+              if (product) {
+                cost += Number(item.quantity) * Number(product.purchase_price || 0)
+              }
+            }
+            point.profit += (amount - cost)
+          }
+        }
+      }
+      setChartData(chartPoints)
+
+      // Fetch Deals
+      const dealsQuery = await supabase
+        .from('transactions')
+        .select(`
+          id, 
+          created_at, 
+          type,
+          total_amount,
+          currency,
+          locations!transactions_from_location_id_fkey(name),
+          transaction_items(
+            quantity,
+            products(name)
+          )
+        `)
+        .in('type', ['sale', 'arrival'])
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      const dealsList: Deal[] = []
+      if (dealsQuery.data) {
+        for (const tx of dealsQuery.data) {
+          const dt = new Date(tx.created_at)
+          const dateStr = `${dt.toLocaleDateString('ru-RU')} - ${dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`
+          
+          let productName = 'Несколько товаров'
+          let totalQty = 0
+          if (tx.transaction_items && tx.transaction_items.length > 0) {
+            totalQty = tx.transaction_items.reduce((sum, item) => sum + Number(item.quantity), 0)
+            if (tx.transaction_items.length === 1) {
+              const p = firstRelation(tx.transaction_items[0].products)
+              if (p) productName = p.name
+            }
+          }
+
+          let locName = 'Не указано'
+          const locObj = firstRelation(tx.locations)
+          // The database returns objects with keys, sometimes nested.
+          if (locObj && (locObj as any).name) {
+            locName = (locObj as any).name
+          }
+
+          dealsList.push({
+            id: tx.id,
+            product: productName || 'Товар',
+            location: locName,
+            date: dateStr,
+            quantity: totalQty,
+            amount: `${Number(tx.total_amount).toLocaleString()} ${tx.currency || 'UZS'}`,
+            status: tx.type === 'sale' ? 'delivered' : 'pending' // sale vs arrival logic for status
+          })
+        }
+      }
+      setRecentDealsList(dealsList)
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
     } finally {
@@ -364,7 +425,7 @@ export default function DashboardPage() {
         </div>
         <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer>
-            <AreaChart data={salesChartData}>
+            <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#4C6FFF" stopOpacity={0.15} />
@@ -382,7 +443,7 @@ export default function DashboardPage() {
                 tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(value) => `${value}%`}
+                tickFormatter={(value) => value > 1000 ? `${(value/1000).toFixed(1)}k` : value}
               />
               <Tooltip
                 contentStyle={{
@@ -395,7 +456,7 @@ export default function DashboardPage() {
               />
               <Area
                 type="monotone"
-                dataKey="value"
+                dataKey="sales"
                 stroke="#4C6FFF"
                 strokeWidth={2.5}
                 fill="url(#salesGradient)"
@@ -419,7 +480,7 @@ export default function DashboardPage() {
         </div>
         <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer>
-            <AreaChart data={revenueChartData}>
+            <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="revSalesGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#FF6B6B" stopOpacity={0.3} />
@@ -441,6 +502,7 @@ export default function DashboardPage() {
                 tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
                 axisLine={false}
                 tickLine={false}
+                tickFormatter={(value) => value > 1000 ? `${(value/1000).toFixed(1)}k` : value}
               />
               <Tooltip
                 contentStyle={{
@@ -505,20 +567,26 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {recentDeals.map((deal, index) => (
-                <tr key={index}>
-                  <td className="font-medium">{deal.product}</td>
-                  <td className="text-[var(--muted-foreground)]">{deal.location}</td>
-                  <td className="text-[var(--muted-foreground)]">{deal.date}</td>
-                  <td>{deal.quantity}</td>
-                  <td className="font-medium">{deal.amount}</td>
-                  <td>
-                    <span className={`status-badge ${deal.status}`}>
-                      {statusLabels[deal.status]}
-                    </span>
-                  </td>
+              {recentDealsList.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-4 text-muted-foreground">Нет недавних сделок</td>
                 </tr>
-              ))}
+              ) : (
+                recentDealsList.map((deal) => (
+                  <tr key={deal.id}>
+                    <td className="font-medium">{deal.product}</td>
+                    <td className="text-[var(--muted-foreground)]">{deal.location}</td>
+                    <td className="text-[var(--muted-foreground)]">{deal.date}</td>
+                    <td>{deal.quantity}</td>
+                    <td className="font-medium">{deal.amount}</td>
+                    <td>
+                      <span className={`status-badge ${deal.status}`}>
+                        {statusLabels[deal.status]}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -591,7 +659,7 @@ export default function DashboardPage() {
           <h3 className="chart-card-title mb-4">Аналитика продаж</h3>
           <div style={{ width: '100%', height: 150 }}>
             <ResponsiveContainer>
-              <LineChart data={salesChartData}>
+              <LineChart data={chartData}>
                 <XAxis dataKey="name" hide />
                 <YAxis hide />
                 <Tooltip
@@ -604,7 +672,7 @@ export default function DashboardPage() {
                 />
                 <Line
                   type="monotone"
-                  dataKey="value"
+                  dataKey="sales"
                   stroke="#00C49A"
                   strokeWidth={2.5}
                   dot={false}
@@ -614,10 +682,8 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </div>
           <div className="flex items-center justify-between mt-2 text-sm text-[var(--muted-foreground)]">
-            <span>Янв</span>
-            <span>Фев</span>
-            <span>Мар</span>
-            <span>Апр</span>
+            <span>{chartData[0]?.name?.split(' ')[1]}</span>
+            <span>{chartData[chartData.length - 1]?.name?.split(' ')[1]}</span>
           </div>
         </div>
       </div>
