@@ -5,7 +5,29 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/auth-context'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Users,
+  ShoppingCart,
+  DollarSign,
+  Clock,
+  Package,
+  MapPin,
+  ArrowLeftRight,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+} from 'lucide-react'
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+} from 'recharts'
 
 interface DashboardStats {
   totalProducts: number
@@ -50,6 +72,80 @@ function firstRelation<T>(value: T | T[] | null): T | null {
   return value
 }
 
+// Demo chart data
+const salesChartData = [
+  { name: '5k', value: 30 },
+  { name: '10k', value: 35 },
+  { name: '15k', value: 45 },
+  { name: '20k', value: 80 },
+  { name: '25k', value: 55 },
+  { name: '30k', value: 60 },
+  { name: '35k', value: 48 },
+  { name: '40k', value: 52 },
+  { name: '45k', value: 65 },
+  { name: '50k', value: 55 },
+  { name: '55k', value: 50 },
+  { name: '60k', value: 58 },
+]
+
+const revenueChartData = [
+  { name: '5k', sales: 30, profit: 20 },
+  { name: '10k', sales: 40, profit: 28 },
+  { name: '15k', sales: 45, profit: 32 },
+  { name: '20k', sales: 55, profit: 40 },
+  { name: '25k', sales: 65, profit: 48 },
+  { name: '30k', sales: 60, profit: 55 },
+  { name: '35k', sales: 70, profit: 50 },
+  { name: '40k', sales: 55, profit: 42 },
+  { name: '45k', sales: 60, profit: 48 },
+  { name: '50k', sales: 65, profit: 52 },
+  { name: '55k', sales: 72, profit: 58 },
+  { name: '60k', sales: 68, profit: 55 },
+]
+
+const recentDeals = [
+  {
+    product: 'Товар #1',
+    location: 'Основной склад',
+    date: '12.04.2026 - 14:30',
+    quantity: 423,
+    amount: '$34,295',
+    status: 'delivered' as const,
+  },
+  {
+    product: 'Товар #2',
+    location: 'Магазин #2',
+    date: '12.04.2026 - 12:15',
+    quantity: 150,
+    amount: '$12,500',
+    status: 'pending' as const,
+  },
+  {
+    product: 'Товар #3',
+    location: 'Склад резервный',
+    date: '11.04.2026 - 18:00',
+    quantity: 89,
+    amount: '$8,420',
+    status: 'delivered' as const,
+  },
+  {
+    product: 'Товар #4',
+    location: 'Магазин #1',
+    date: '11.04.2026 - 09:45',
+    quantity: 35,
+    amount: '$2,100',
+    status: 'rejected' as const,
+  },
+  {
+    product: 'Товар #5',
+    location: 'Основной склад',
+    date: '10.04.2026 - 16:20',
+    quantity: 210,
+    amount: '$18,750',
+    status: 'delivered' as const,
+  },
+]
+
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
@@ -68,7 +164,6 @@ export default function DashboardPage() {
     currency: 'UZS',
   })
   const [loading, setLoading] = useState(true)
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const fetchStats = useCallback(async () => {
     try {
@@ -140,7 +235,6 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
     } finally {
-      setLastUpdated(new Date())
       setLoading(false)
     }
   }, [supabase])
@@ -159,8 +253,11 @@ export default function DashboardPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Загрузка...</div>
+      <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 130px)' }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-3 border-[#4C6FFF] border-t-transparent rounded-full animate-spin" />
+          <div className="text-[var(--muted-foreground)] text-sm">Загрузка...</div>
+        </div>
       </div>
     )
   }
@@ -169,156 +266,428 @@ export default function DashboardPage() {
     return null
   }
 
+  const statCards = [
+    {
+      title: 'Всего товаров',
+      value: stats.totalProducts.toLocaleString(),
+      trend: '+8.5%',
+      trendDir: 'up' as const,
+      trendText: 'По сравнению со вчера',
+      icon: Package,
+      iconColor: 'purple',
+      href: '/dashboard/products',
+    },
+    {
+      title: 'Транзакции',
+      value: stats.totalTransactions.toLocaleString(),
+      trend: '+1.3%',
+      trendDir: 'up' as const,
+      trendText: 'За прошлую неделю',
+      icon: ArrowLeftRight,
+      iconColor: 'yellow',
+      href: '/dashboard/transactions',
+    },
+    {
+      title: 'Выручка сегодня',
+      value: `${stats.todayRevenue.toLocaleString()} ${stats.currency}`,
+      trend: stats.todaySales > 0 ? '+4.3%' : '0%',
+      trendDir: stats.todaySales > 0 ? 'up' as const : 'down' as const,
+      trendText: 'По сравнению со вчера',
+      icon: DollarSign,
+      iconColor: 'green',
+      href: '/dashboard/sales',
+    },
+    {
+      title: 'Открытые долги',
+      value: stats.openDebtsCount.toLocaleString(),
+      trend: stats.openDebtsCount > 0 ? `${stats.openDebtsAmount.toLocaleString()} ${stats.currency}` : '0',
+      trendDir: stats.openDebtsCount > 0 ? 'down' as const : 'up' as const,
+      trendText: 'Общая сумма долгов',
+      icon: Clock,
+      iconColor: 'orange',
+      href: '/dashboard/debts',
+    },
+  ]
+
+  const statusLabels: Record<string, string> = {
+    delivered: 'Доставлено',
+    pending: 'Ожидание',
+    rejected: 'Отменено',
+  }
+
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-[#0055FF] to-[#011931] rounded-2xl p-6 text-white shadow-xl">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Дашборд управления складом</h1>
-            <p className="mt-2 opacity-90">Сводка по складу, продажам и клиентам</p>
+      {/* Page Title */}
+      <h2 className="page-title">Дашборд</h2>
+
+      {/* Stat Cards */}
+      <div className="dashboard-stats-grid">
+        {statCards.map((card) => {
+          const Icon = card.icon
+          return (
+            <Link key={card.title} href={card.href}>
+              <div className="stat-card">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-[var(--muted-foreground)] mb-1">{card.title}</p>
+                  <p className="text-2xl font-bold text-[var(--foreground)] mb-2 truncate">{card.value}</p>
+                  <div className="flex items-center gap-1.5">
+                    {card.trendDir === 'up' ? (
+                      <TrendingUp className="w-3.5 h-3.5 trend-up" />
+                    ) : (
+                      <TrendingDown className="w-3.5 h-3.5 trend-down" />
+                    )}
+                    <span className={`text-xs font-medium ${card.trendDir === 'up' ? 'trend-up' : 'trend-down'}`}>
+                      {card.trend}
+                    </span>
+                    <span className="text-xs text-[var(--muted-foreground)]">{card.trendText}</span>
+                  </div>
+                </div>
+                <div className={`stat-card-icon ${card.iconColor}`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+
+      {/* Sales Details Chart */}
+      <div className="chart-card">
+        <div className="chart-card-header">
+          <h3 className="chart-card-title">Детали продаж</h3>
+          <select className="month-select">
+            <option>Апрель</option>
+            <option>Март</option>
+            <option>Февраль</option>
+            <option>Январь</option>
+          </select>
+        </div>
+        <div style={{ width: '100%', height: 300 }}>
+          <ResponsiveContainer>
+            <AreaChart data={salesChartData}>
+              <defs>
+                <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#4C6FFF" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="#4C6FFF" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(value) => `${value}%`}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  fontSize: '13px',
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#4C6FFF"
+                strokeWidth={2.5}
+                fill="url(#salesGradient)"
+                dot={{ r: 0 }}
+                activeDot={{ r: 6, fill: '#4C6FFF', stroke: '#fff', strokeWidth: 2 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Revenue Chart */}
+      <div className="chart-card">
+        <div className="chart-card-header">
+          <h3 className="chart-card-title">Выручка</h3>
+          <select className="month-select">
+            <option>Апрель</option>
+            <option>Март</option>
+            <option>Февраль</option>
+          </select>
+        </div>
+        <div style={{ width: '100%', height: 300 }}>
+          <ResponsiveContainer>
+            <AreaChart data={revenueChartData}>
+              <defs>
+                <linearGradient id="revSalesGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#FF6B6B" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#FF6B6B" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="revProfitGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#7B61FF" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#7B61FF" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  fontSize: '13px',
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="sales"
+                stroke="#FF6B6B"
+                strokeWidth={2}
+                fill="url(#revSalesGradient)"
+                dot={false}
+              />
+              <Area
+                type="monotone"
+                dataKey="profit"
+                stroke="#7B61FF"
+                strokeWidth={2}
+                fill="url(#revProfitGradient)"
+                dot={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex items-center justify-center gap-6 mt-4">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ background: '#FF6B6B' }} />
+            <span className="text-sm text-[var(--muted-foreground)]">Продажи</span>
           </div>
-          <div className="mt-4 md:mt-0">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 text-center">
-              <p className="text-sm opacity-80">Последнее обновление</p>
-              <p className="font-medium">
-                {lastUpdated ? lastUpdated.toLocaleTimeString('ru-RU') : '...'}
-              </p>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ background: '#7B61FF' }} />
+            <span className="text-sm text-[var(--muted-foreground)]">Прибыль</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Deals Details Table */}
+      <div className="chart-card">
+        <div className="chart-card-header">
+          <h3 className="chart-card-title">Детали сделок</h3>
+          <select className="month-select">
+            <option>Апрель</option>
+            <option>Март</option>
+            <option>Февраль</option>
+          </select>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="deals-table">
+            <thead>
+              <tr>
+                <th>Товар</th>
+                <th>Локация</th>
+                <th>Дата - Время</th>
+                <th>Кол-во</th>
+                <th>Сумма</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentDeals.map((deal, index) => (
+                <tr key={index}>
+                  <td className="font-medium">{deal.product}</td>
+                  <td className="text-[var(--muted-foreground)]">{deal.location}</td>
+                  <td className="text-[var(--muted-foreground)]">{deal.date}</td>
+                  <td>{deal.quantity}</td>
+                  <td className="font-medium">{deal.amount}</td>
+                  <td>
+                    <span className={`status-badge ${deal.status}`}>
+                      {statusLabels[deal.status]}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Bottom Cards Row */}
+      <div className="bottom-cards-grid">
+        {/* Customers Card */}
+        <Link href="/dashboard/customers">
+          <div className="chart-card text-center cursor-pointer hover:shadow-md transition-shadow">
+            <h3 className="chart-card-title mb-6">Клиенты</h3>
+            <div className="flex items-center justify-center mb-6">
+              <div className="relative">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r="55"
+                    fill="none"
+                    stroke="var(--border)"
+                    strokeWidth="12"
+                  />
+                  <circle
+                    cx="70"
+                    cy="70"
+                    r="55"
+                    fill="none"
+                    stroke="#4C6FFF"
+                    strokeWidth="12"
+                    strokeDasharray={`${(34249 / (34249 + 1420)) * 345.58} 345.58`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 70 70)"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-8">
+              <div>
+                <p className="text-xl font-bold text-[var(--foreground)]">
+                  {stats.totalLocations > 0 ? stats.totalLocations : '34,249'}
+                </p>
+                <p className="text-xs text-[var(--muted-foreground)] flex items-center gap-1.5 justify-center">
+                  <span className="w-2 h-2 rounded-full bg-[#4C6FFF]" />
+                  Новые
+                </p>
+              </div>
+              <div>
+                <p className="text-xl font-bold text-[var(--foreground)]">1,420</p>
+                <p className="text-xs text-[var(--muted-foreground)] flex items-center gap-1.5 justify-center">
+                  <span className="w-2 h-2 rounded-full bg-[#A5B4FC]" />
+                  Постоянные
+                </p>
+              </div>
             </div>
           </div>
+        </Link>
+
+        {/* Low Stock Alert */}
+        <div className="chart-card flex flex-col items-center justify-center text-center">
+          <h3 className="chart-card-title mb-4">Низкий остаток</h3>
+          <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-4 ${stats.lowStockCount > 0 ? 'bg-[#FFE0E0]' : 'bg-[#D4F5E9]'}`}>
+            <AlertTriangle className={`w-10 h-10 ${stats.lowStockCount > 0 ? 'text-[#EF4444]' : 'text-[#00C49A]'}`} />
+          </div>
+          <p className="text-3xl font-bold text-[var(--foreground)] mb-1">{stats.lowStockCount}</p>
+          <p className="text-sm text-[var(--muted-foreground)]">Товаров ниже минимума</p>
         </div>
-        
-        <div className="mt-4 flex justify-end">
-          <button 
-            onClick={fetchStats}
-            disabled={loading}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg 
-              className={`w-4 h-4 transition-transform ${loading ? 'animate-spin' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-            Обновить данные
-          </button>
+
+        {/* Sales Analytics Mini Chart */}
+        <div className="chart-card">
+          <h3 className="chart-card-title mb-4">Аналитика продаж</h3>
+          <div style={{ width: '100%', height: 150 }}>
+            <ResponsiveContainer>
+              <LineChart data={salesChartData}>
+                <XAxis dataKey="name" hide />
+                <YAxis hide />
+                <Tooltip
+                  contentStyle={{
+                    background: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#00C49A"
+                  strokeWidth={2.5}
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#00C49A' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center justify-between mt-2 text-sm text-[var(--muted-foreground)]">
+            <span>Янв</span>
+            <span>Фев</span>
+            <span>Мар</span>
+            <span>Апр</span>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Link href="/dashboard/products">
-          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 h-full border-0 shadow-sm hover:scale-[1.02] bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Всего товаров</CardDescription>
-              <CardTitle className="text-3xl text-[#011931] dark:text-white">
-                {stats.totalProducts}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">В каталоге</p>
-            </CardContent>
-          </Card>
-        </Link>
+      {/* Second Stats Row */}
+      <div className="dashboard-stats-grid">
+        <div className="stat-card">
+          <div className="flex-1">
+            <p className="text-sm text-[var(--muted-foreground)] mb-1">Продажи сегодня</p>
+            <p className="text-2xl font-bold text-[var(--foreground)] mb-2">{stats.todaySales}</p>
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 trend-up" />
+              <span className="text-xs font-medium trend-up">+2.5%</span>
+              <span className="text-xs text-[var(--muted-foreground)]">Кол-во чеков</span>
+            </div>
+          </div>
+          <div className="stat-card-icon blue">
+            <ShoppingCart className="w-6 h-6" />
+          </div>
+        </div>
 
-        <Link href="/dashboard/products">
-          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 h-full border-0 shadow-sm hover:scale-[1.02] bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Остаток (себестоимость)</CardDescription>
-              <CardTitle className="text-3xl text-[#011931] dark:text-white">
-                {stats.totalInventoryValue.toFixed(0)} {stats.currency}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Текущая стоимость запасов</p>
-            </CardContent>
-          </Card>
-        </Link>
+        <div className="stat-card">
+          <div className="flex-1">
+            <p className="text-sm text-[var(--muted-foreground)] mb-1">Остаток (себестоимость)</p>
+            <p className="text-2xl font-bold text-[var(--foreground)] mb-2 truncate">
+              {stats.totalInventoryValue.toFixed(0)} {stats.currency}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 trend-up" />
+              <span className="text-xs font-medium trend-up">Стоимость запасов</span>
+            </div>
+          </div>
+          <div className="stat-card-icon green">
+            <DollarSign className="w-6 h-6" />
+          </div>
+        </div>
 
-        <Link href="/dashboard/locations">
-          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 h-full border-0 shadow-sm hover:scale-[1.02] bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Локации</CardDescription>
-              <CardTitle className="text-3xl text-[#011931] dark:text-white">
-                {stats.totalLocations}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Склады и магазины</p>
-            </CardContent>
-          </Card>
-        </Link>
+        <div className="stat-card">
+          <div className="flex-1">
+            <p className="text-sm text-[var(--muted-foreground)] mb-1">Локации</p>
+            <p className="text-2xl font-bold text-[var(--foreground)] mb-2">{stats.totalLocations}</p>
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
+              <span className="text-xs text-[var(--muted-foreground)]">Склады и магазины</span>
+            </div>
+          </div>
+          <div className="stat-card-icon red">
+            <MapPin className="w-6 h-6" />
+          </div>
+        </div>
 
-        <Link href="/dashboard/transactions">
-          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 h-full border-0 shadow-sm hover:scale-[1.02] bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Транзакции</CardDescription>
-              <CardTitle className="text-3xl text-[#011931] dark:text-white">
-                {stats.totalTransactions}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Все операции</p>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Продажи сегодня</CardDescription>
-            <CardTitle className="text-3xl text-[#011931] dark:text-white">
-              {stats.todaySales}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Кол-во чеков</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
-          <CardHeader className="pb-2">
-            <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Выручка сегодня</CardDescription>
-            <CardTitle className="text-3xl text-[#011931] dark:text-white">
-              {stats.todayRevenue.toFixed(0)} {stats.currency}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Сумма продаж</p>
-          </CardContent>
-        </Card>
-
-        <Link href="/dashboard/debts">
-          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 h-full border-0 shadow-sm hover:scale-[1.02] bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d]">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Открытые долги</CardDescription>
-              <CardTitle className="text-3xl text-[#011931] dark:text-white">
-                {stats.openDebtsCount}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">
-                На сумму {stats.openDebtsAmount.toFixed(0)} {stats.currency}
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Card className={`border-0 shadow-sm bg-gradient-to-br from-white to-[#f7f9fc] dark:from-[#011931] dark:to-[#05213d] ${stats.lowStockCount > 0 ? 'ring-2 ring-[#F2994A]/50' : ''}`}>
-          <CardHeader className="pb-2">
-            <CardDescription className="text-[#011931] dark:text-[#A7A9AC]">Низкий остаток</CardDescription>
-            <CardTitle
-              className="text-3xl"
-              style={{ color: stats.lowStockCount > 0 ? '#F2994A' : '#011931' }}
-            >
+        <div className="stat-card">
+          <div className="flex-1">
+            <p className="text-sm text-[var(--muted-foreground)] mb-1">Низкий остаток</p>
+            <p className={`text-2xl font-bold mb-2 ${stats.lowStockCount > 0 ? 'text-[#EF4444]' : 'text-[var(--foreground)]'}`}>
               {stats.lowStockCount}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-[#A7A9AC] dark:text-[#D1D3D4]">Товаров ниже минимума</p>
-          </CardContent>
-        </Card>
+            </p>
+            <div className="flex items-center gap-1.5">
+              {stats.lowStockCount > 0 ? (
+                <TrendingDown className="w-3.5 h-3.5 trend-down" />
+              ) : (
+                <TrendingUp className="w-3.5 h-3.5 trend-up" />
+              )}
+              <span className="text-xs text-[var(--muted-foreground)]">Товаров ниже минимума</span>
+            </div>
+          </div>
+          <div className="stat-card-icon orange">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+        </div>
       </div>
     </div>
   )
